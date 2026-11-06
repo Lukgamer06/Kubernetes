@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: prestashop
+  namespace: prestashop
+  annotations:
+    service.beta.kubernetes.io/azure-load-balancer-resource-group: "${AZURE_NODE_RESOURCE_GROUP}"
+    service.beta.kubernetes.io/azure-pip-name: "${WORDPRESS_PIP_NAME}"
+  labels:
+    app.kubernetes.io/name: prestashop
+    app.kubernetes.io/part-of: lab6-multiplatform
+spec:
+  type: LoadBalancer
+  selector:
+    app: prestashop
+  ports:
+    - name: http
+      port: 8080
+      targetPort: http
+      protocol: TCP

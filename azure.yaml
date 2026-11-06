@@ -1,0 +1,13 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/Azure/azure-dev/main/schemas/v1.0/azure.yaml.json
+name: lab6-aks-multiplatform
+metadata:
+    template: https://github.com/sabbour/aks-app-template
+hooks:
+    preprovision:
+        interactive: false
+        shell: sh
+        run: chmod +x infra/azd-hooks/preprovision.sh && infra/azd-hooks/preprovision.sh
+infra:
+    provider: bicep
+    path: infra
+    module: main

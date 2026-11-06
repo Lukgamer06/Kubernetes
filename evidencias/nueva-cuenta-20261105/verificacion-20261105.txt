@@ -1,0 +1,65 @@
+LABORATORIO 6 - DESPLIEGUE CUENTA NUEVA
+Fecha local: 2026-11-05T15:32:32-05:00
+
+Suscripcion: b0ad7517-a5c8-47f7-bea4-ed44f3a40979
+Region/cluster/entorno: centralus
+aks-ovpeu5n5emvl4
+lab6-lucas-sofia-20261105
+
+NODOS
+NAME                                 STATUS   ROLES    AGE   VERSION   INTERNAL-IP   EXTERNAL-IP   OS-IMAGE             KERNEL-VERSION             CONTAINER-RUNTIME
+aks-systempool-21303256-vmss000000   Ready    <none>   31m   v1.36.3   10.224.0.4    <none>        Ubuntu 24.04.5 LTS   6.8.0-1073-azure (arm64)   containerd://2.3.7-4
+aks-systempool-21303256-vmss000002   Ready    <none>   28m   v1.36.3   10.224.0.6    <none>        Ubuntu 24.04.5 LTS   6.8.0-1073-azure (arm64)   containerd://2.3.7-4
+aks-systempool-21303256-vmss000003   Ready    <none>   28m   v1.36.3   10.224.0.5    <none>        Ubuntu 24.04.5 LTS   6.8.0-1073-azure (arm64)   containerd://2.3.7-4
+
+WORKLOAD PODS
+NAME                        READY   STATUS    RESTARTS   AGE     IP             NODE                                 NOMINATED NODE   READINESS GATES
+mariadb-56c6c59557-fnrkv    1/1     Running   0          5m28s   10.244.2.164   aks-systempool-21303256-vmss000003   <none>           <none>
+wordpress-c7f5d775d-c9pwt   1/1     Running   0          3m34s   10.244.2.41    aks-systempool-21303256-vmss000003   <none>           <none>
+NAME                          READY   STATUS    RESTARTS   AGE     IP             NODE                                 NOMINATED NODE   READINESS GATES
+mariadb-6c9bb56698-w4j6m      1/1     Running   0          3m57s   10.244.1.204   aks-systempool-21303256-vmss000002   <none>           <none>
+prestashop-745c85db44-ktbfn   1/1     Running   0          3m21s   10.244.1.237   aks-systempool-21303256-vmss000002   <none>           <none>
+
+DEPLOYMENTS
+NAMESPACE            NAME                                  READY   DESIRED
+prestashop           mariadb                               1       1
+prestashop           prestashop                            1       1
+wordpress            mariadb                               1       1
+wordpress            wordpress                             1       1
+
+SERVICES
+NAME        TYPE           CLUSTER-IP    EXTERNAL-IP      PORT(S)        AGE   SELECTOR
+mariadb     ClusterIP      10.0.67.167   <none>           3306/TCP       24m   app=mariadb
+wordpress   LoadBalancer   10.0.60.68    172.168.157.10   80:31916/TCP   23m   app=wordpress
+NAME         TYPE           CLUSTER-IP    EXTERNAL-IP      PORT(S)          AGE   SELECTOR
+mariadb      ClusterIP      10.0.55.166   <none>           3306/TCP         24m   app=mariadb
+prestashop   LoadBalancer   10.0.106.96   172.168.157.10   8080:31405/TCP   23m   app=prestashop
+
+PVC
+NAMESPACE    NAME              STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS   VOLUMEATTRIBUTESCLASS   AGE
+prestashop   mariadb-data      Bound    pvc-f997aa50-b5cc-4449-acfc-421803c5f697   8Gi        RWO            managed-csi    <unset>                 25m
+prestashop   prestashop-data   Bound    pvc-773b55ef-19d7-4006-8ef5-15b753d19455   8Gi        RWO            managed-csi    <unset>                 25m
+wordpress    mariadb-data      Bound    pvc-b7d13915-669e-4cdd-9369-a99636f32975   8Gi        RWO            managed-csi    <unset>                 25m
+wordpress    wordpress-data    Bound    pvc-cb5e9107-c583-4cc4-8f61-421b037d4d2f   8Gi        RWO            managed-csi    <unset>                 25m
+
+PUBLIC HTTP CHECKS
+WordPress page HTTP 200 URL http://172.168.157.10/lab-6-persistencia-wordpress/
+PrestaShop product HTTP 200 URL http://172.168.157.10:8080/home/20-producto-lab-6-persistente.html
+
+GRAFANA DASHBOARD
+[
+  {
+    "folder": "Azure Managed Prometheus",
+    "title": "Kubernetes / Compute Resources / Namespace (Pods)",
+    "uid": "6385dfe4b7f54710aa1f748b34ba6738",
+    "url": "/d/6385dfe4b7f54710aa1f748b34ba6738/kubernetes-compute-resources-namespace-pods"
+  }
+]
+
+MANAGED PROMETHEUS POD METRICS
+Namespace    Pod
+-----------  ---------------------------
+prestashop   mariadb-6c9bb56698-w4j6m
+wordpress    mariadb-56c6c59557-fnrkv
+prestashop   prestashop-745c85db44-ktbfn
+wordpress    wordpress-c7f5d775d-c9pwt

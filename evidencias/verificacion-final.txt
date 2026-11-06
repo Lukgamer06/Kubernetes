@@ -1,0 +1,97 @@
+LABORATORIO 6 — VERIFICACIÓN REAL
+Fecha de captura: 2026-10-23 17:06 UTC
+Entorno: lab6-lucas-sofia
+
+
+## AKS
+NAME                                 STATUS   ROLES    AGE   VERSION   INTERNAL-IP   EXTERNAL-IP   OS-IMAGE             KERNEL-VERSION             CONTAINER-RUNTIME
+aks-systempool-23835684-vmss000000   Ready    <none>   32m   v1.36.3   10.224.0.4    <none>        Ubuntu 24.04.5 LTS   6.8.0-1071-azure (arm64)   containerd://2.3.3-3
+aks-systempool-23835684-vmss000002   Ready    <none>   26m   v1.36.3   10.224.0.5    <none>        Ubuntu 24.04.5 LTS   6.8.0-1071-azure (arm64)   containerd://2.3.3-3
+aks-systempool-23835684-vmss000003   Ready    <none>   23m   v1.36.3   10.224.0.6    <none>        Ubuntu 24.04.5 LTS   6.8.0-1071-azure (arm64)   containerd://2.3.3-3
+
+
+## Deployments de las aplicaciones y MariaDB
+NAME        READY   UP-TO-DATE   AVAILABLE   AGE   CONTAINERS   IMAGES                          SELECTOR
+mariadb     1/1     1            1           30m   mariadb      mariadb:11.4.8                  app=mariadb
+wordpress   1/1     1            1           19m   wordpress    wordpress:6.8.2-php8.3-apache   app=wordpress
+
+NAME         READY   UP-TO-DATE   AVAILABLE   AGE   CONTAINERS   IMAGES                               SELECTOR
+mariadb      1/1     1            1           30m   mariadb      mariadb:11.4.8                       app=mariadb
+prestashop   1/1     1            1           19m   prestashop   prestashop/prestashop:8.2.3-apache   app=prestashop
+
+
+## Pods después de los reinicios
+NAME                         READY   STATUS    RESTARTS   AGE     IP             NODE                                 NOMINATED NODE   READINESS GATES
+mariadb-64495f774b-p6lgq     1/1     Running   0          7m19s   10.244.1.143   aks-systempool-23835684-vmss000002   <none>           <none>
+wordpress-69ff8c5fd8-kn2bj   1/1     Running   0          7m5s    10.244.2.118   aks-systempool-23835684-vmss000003   <none>           <none>
+
+NAME                         READY   STATUS    RESTARTS   AGE     IP             NODE                                 NOMINATED NODE   READINESS GATES
+mariadb-6f96db999b-2h98w     1/1     Running   0          6m51s   10.244.1.182   aks-systempool-23835684-vmss000002   <none>           <none>
+prestashop-54bc58649-nwjx6   1/1     Running   0          6m32s   10.244.2.54    aks-systempool-23835684-vmss000003   <none>           <none>
+
+
+## Services
+NAME        TYPE           CLUSTER-IP     EXTERNAL-IP       PORT(S)        AGE   SELECTOR
+mariadb     ClusterIP      10.0.174.116   <none>            3306/TCP       30m   app=mariadb
+wordpress   LoadBalancer   10.0.52.73     128.203.171.101   80:31556/TCP   24m   app=wordpress
+
+NAME         TYPE           CLUSTER-IP    EXTERNAL-IP       PORT(S)          AGE   SELECTOR
+mariadb      ClusterIP      10.0.57.249   <none>            3306/TCP         30m   app=mariadb
+prestashop   LoadBalancer   10.0.45.201   128.203.171.101   8080:32196/TCP   24m   app=prestashop
+
+
+## PVC
+NAMESPACE    NAME              STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS   VOLUMEATTRIBUTESCLASS   AGE
+prestashop   mariadb-data      Bound    pvc-b4601991-aa9d-4a2d-8770-98bfbf2a9510   8Gi        RWO            managed-csi    <unset>                 30m
+prestashop   prestashop-data   Bound    pvc-79ad3344-b979-4c55-bb51-0815a156db98   8Gi        RWO            managed-csi    <unset>                 30m
+wordpress    mariadb-data      Bound    pvc-df07f09f-60e3-4b1f-8617-30e62653329d   8Gi        RWO            managed-csi    <unset>                 30m
+wordpress    wordpress-data    Bound    pvc-5ced5398-9e3c-4fe4-890c-8d96e305c8fb   8Gi        RWO            managed-csi    <unset>                 30m
+
+
+## Rollouts completados
+wordpress/mariadb: deployment "mariadb" successfully rolled out
+wordpress/wordpress: deployment "wordpress" successfully rolled out
+prestashop/mariadb: deployment "mariadb" successfully rolled out
+prestashop/prestashop: deployment "prestashop" successfully rolled out
+
+
+## Prueba de persistencia después del reinicio
+WordPress página “Lab 6 - Persistencia WordPress”: HTTP 200
+PrestaShop producto “Producto Lab 6 Persistente”: HTTP 200
+La ficha pública contiene el nombre del producto: True
+
+
+## Azure Monitor managed Prometheus
+Endpoint: https://monitor-4moqvstfxiaqm-bffceyetfcgndugk.centralus.prometheus.monitor.azure.com
+Consulta: kube_pod_info{namespace=~"wordpress|prestashop"}
+Resultado: HTTP 200; 4 series
+prestashop / mariadb-6f96db999b-2h98w / nodo aks-systempool-23835684-vmss000002
+prestashop / prestashop-54bc58649-nwjx6 / nodo aks-systempool-23835684-vmss000003
+wordpress / mariadb-64495f774b-p6lgq / nodo aks-systempool-23835684-vmss000002
+wordpress / wordpress-69ff8c5fd8-kn2bj / nodo aks-systempool-23835684-vmss000003
+
+
+## Azure Managed Grafana
+Workspace: https://gpd-4moqvstfxiaqm-ahg3bdf5c7cge9gg.cus.grafana.azure.com
+Dashboard provisionado: Kubernetes / Compute Resources / Namespace (Pods)
+Carpeta: Azure Managed Prometheus
+Ruta: /d/6385dfe4b7f54710aa1f748b34ba6738/kubernetes-compute-resources-namespace-pods
+Filtros: datasource, cluster, namespace
+Paneles: CPU Utilisation (from requests), CPU Utilisation (from limits), Memory Utilisation (from requests), Memory Utilisation (from limits), CPU Usage, CPU Quota, Memory Usage (w/o cache), Memory Quota, Current Network Usage, Receive Bandwidth, Transmit Bandwidth, Rate of Received Packets, Rate of Transmitted Packets, Rate of Received Packets Dropped, Rate of Transmitted Packets Dropped, IOPS(Reads+Writes), ThroughPut(Read+Write), Current Storage IO
+Service Accounts/API Keys: Disabled (estado final; no hay cuentas ni tokens temporales).
+
+
+## Decisión de apagado al 2026-10-23
+El clúster y los recursos se mantienen activos hasta la revisión académica. `azd down` no se ejecutó. Después de la revisión, ejecutar `azd down` desde este directorio y confirmar que se elimina el resource group `rg-lab6-lucas-sofia`.
+
+## Estado actual al 2026-11-03 16:14 -05
+
+Azure Resource Manager: suscripción Azure for Students = Disabled.
+AKS aks-4moqvstfxiaqm: provisioningState=Failed; powerState=Deallocated.
+az aks start: rechazado con ReadOnlyDisabledSubscription; la suscripción está deshabilitada y no acepta escrituras.
+WordPress http://128.203.171.101/: timeout; HTTP 000.
+PrestaShop http://128.203.171.101:8080/: timeout; HTTP 000.
+Azure Managed Grafana: API responde TargetGrafanaWorkspaceSuspendException ("Grafana Instance Is Suspending Or Suspended").
+Resource group rg-lab6-lucas-sofia: todavía existe; los recursos permanecen listados en Azure.
+azd down: no ejecutado ni confirmado. Reactivar la suscripción antes de reparar o eliminar recursos.
+Costos actuales: no confirmados en Cost Management. Revisar la facturación después de reactivar la suscripción.

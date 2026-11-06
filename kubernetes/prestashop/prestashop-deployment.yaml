@@ -1,0 +1,106 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: prestashop
+  namespace: prestashop
+  labels:
+    app.kubernetes.io/name: prestashop
+    app.kubernetes.io/part-of: lab6-multiplatform
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: prestashop
+  template:
+    metadata:
+      labels:
+        app: prestashop
+        app.kubernetes.io/name: prestashop
+        app.kubernetes.io/part-of: lab6-multiplatform
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: prestashop
+          image: prestashop/prestashop:8.2.3-apache
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 80
+              protocol: TCP
+          env:
+            - name: DB_SERVER
+              value: mariadb
+            - name: DB_NAME
+              valueFrom:
+                secretKeyRef:
+                  name: prestashop-credentials
+                  key: mariadb-database
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: prestashop-credentials
+                  key: mariadb-user
+            - name: DB_PASSWD
+              valueFrom:
+                secretKeyRef:
+                  name: prestashop-credentials
+                  key: mariadb-password
+            - name: PS_INSTALL_AUTO
+              value: "1"
+            - name: PS_DEV_MODE
+              value: "0"
+            - name: PS_DOMAIN
+              valueFrom:
+                secretKeyRef:
+                  name: prestashop-credentials
+                  key: prestashop-domain
+            - name: ADMIN_MAIL
+              valueFrom:
+                secretKeyRef:
+                  name: prestashop-credentials
+                  key: prestashop-admin-email
+            - name: ADMIN_PASSWD
+              valueFrom:
+                secretKeyRef:
+                  name: prestashop-credentials
+                  key: prestashop-admin-password
+          resources:
+            requests:
+              cpu: 250m
+              memory: 512Mi
+            limits:
+              cpu: "1"
+              memory: 1536Mi
+          startupProbe:
+            httpGet:
+              path: /
+              port: http
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 90
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+            periodSeconds: 20
+            timeoutSeconds: 5
+            failureThreshold: 3
+          volumeMounts:
+            - name: prestashop-data
+              mountPath: /var/www/html
+      volumes:
+        - name: prestashop-data
+          persistentVolumeClaim:
+            claimName: prestashop-data
